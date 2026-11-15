@@ -6,13 +6,13 @@ services:
     command: ["node", "/app/server.js"]
     environment:
       PORT: "3000"
-      DATA_DIR: "/app/data"
+      DATA_DIR: "/data"
       TZ_NAME: "Europe/Oslo"
     expose:
       - "3000"
     volumes:
       - ./api:/app:ro
-      - ./data:/app/data:ro
+      - ./data:/data:ro
     networks:
       - advent-internal
     healthcheck:
