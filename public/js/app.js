@@ -14,12 +14,13 @@
   ]);
   const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
   const MONTH_NAMES = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "januar", "februar", "mars", "april", "mai", "juni",
+    "juli", "august", "september", "oktober", "november", "desember",
   ];
 
   const snowfallEl = document.getElementById("snowfall");
   const titleEl = document.getElementById("calendar-title");
+  const subtitleEl = document.getElementById("calendar-subtitle");
   const demoBannerEl = document.getElementById("demo-banner");
   const statusEl = document.getElementById("calendar-status");
   const gridEl = document.getElementById("calendar-grid");
@@ -248,9 +249,9 @@
    * @param {number} totalCount
    */
   function updateDemoBanner(effectiveDate, unlockedCount, totalCount) {
-    const monthName = MONTH_NAMES[effectiveDate.month - 1] || "December";
-    const prefix = effectiveDate.isDemo ? "Demo date: " : "";
-    demoBannerEl.textContent = `${prefix}${monthName} ${effectiveDate.day} · ${unlockedCount} / ${totalCount} doors unlocked`;
+    const monthName = MONTH_NAMES[effectiveDate.month - 1] || "desember";
+    const prefix = effectiveDate.isDemo ? "Demodato: " : "";
+    demoBannerEl.textContent = `${prefix}${effectiveDate.day}. ${monthName} · ${unlockedCount} / ${totalCount} luker åpnet`;
     demoBannerEl.hidden = false;
   }
 
@@ -278,21 +279,21 @@
    * @param {{ isUnlocked: boolean, isToday: boolean }} doorState
    */
   function openDoorModal(door, doorState) {
-    const label = door.title || `Day ${door.day}`;
-    modalTitleEl.textContent = doorState.isToday ? `${label} — Today` : label;
+    const label = door.title || `Luke ${door.day}`;
+    modalTitleEl.textContent = doorState.isToday ? `${label} — I dag` : label;
     modalMessageEl.hidden = true;
     modalMessageEl.textContent = "";
     resetYouTubePlayer();
 
     if (!doorState.isUnlocked) {
-      showModalMessage(`Wrapped until December ${door.day}. Come back then to unwrap this video!`);
+      showModalMessage(`Låst frem til ${door.day}. desember. Kom tilbake da for å åpne luken!`);
     } else {
       const youtubeId = extractYouTubeId(door.videoUrl);
       if (youtubeId) {
         youtubeEl.hidden = false;
         youtubeEl.src = buildYouTubeEmbedUrl(youtubeId);
       } else {
-        showModalMessage(`No YouTube video has been linked for ${label} yet.`);
+        showModalMessage(`Ingen YouTube-video er lagt inn for ${label} ennå.`);
       }
     }
 
@@ -324,7 +325,7 @@
   function createDoorCard(door, doorState) {
     const { isUnlocked, isToday } = doorState;
     const isEve = door.day === 24;
-    const title = door.title || `Day ${door.day}`;
+    const title = door.title || `Luke ${door.day}`;
 
     const button = document.createElement("button");
     button.type = "button";
@@ -338,16 +339,16 @@
       .join(" ");
     button.dataset.day = String(door.day);
 
-    let stateLabel = `Locked until December ${door.day}`;
-    let badgeText = `Dec ${door.day}`;
+    let stateLabel = `Låst frem til ${door.day}. desember`;
+    let badgeText = `${door.day}. des`;
     let iconVariant = isEve ? "eve" : "locked";
     if (isToday && isUnlocked) {
-      stateLabel = "Today, unlocked";
-      badgeText = "Today";
+      stateLabel = "I dag, åpnet";
+      badgeText = "I dag";
       iconVariant = "today";
     } else if (isUnlocked) {
-      stateLabel = "Unlocked";
-      badgeText = "Open";
+      stateLabel = "Åpnet";
+      badgeText = "Åpen";
       iconVariant = isEve ? "eve" : "open";
     }
     button.setAttribute("aria-label", `${title} (${stateLabel})`);
@@ -370,7 +371,7 @@
 
     const titleSpan = document.createElement("span");
     titleSpan.className = "door-card__title";
-    titleSpan.textContent = isEve && title === "Day 24" ? "Christmas Eve" : title;
+    titleSpan.textContent = isEve && (title === "Luke 24" || title === "Day 24") ? "Julaften" : title;
 
     const badgeSpan = document.createElement("span");
     badgeSpan.className = "door-card__badge";
@@ -400,10 +401,13 @@
         titleEl.textContent = data.title;
         document.title = data.title;
       }
+      if (subtitleEl && data && typeof data.description === "string" && data.description.trim()) {
+        subtitleEl.textContent = data.description;
+      }
 
       const doors = Array.isArray(data) ? data : data?.doors;
       if (!Array.isArray(doors) || doors.length === 0) {
-        setStatus("No calendar doors found in calendar.json.");
+        setStatus("Fant ingen luker i calendar.json.");
         return;
       }
 
@@ -423,7 +427,7 @@
       updateDemoBanner(effectiveDate, unlockedCount, doors.length);
     } catch (error) {
       console.error("Failed to initialize advent calendar:", error);
-      setStatus("Unable to load the calendar configuration. Please try again later.");
+      setStatus("Kunne ikke laste inn kalenderen. Prøv igjen senere.");
     }
   }
 

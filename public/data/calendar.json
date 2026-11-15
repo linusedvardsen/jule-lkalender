@@ -1,148 +1,149 @@
 {
-  "title": "Video Advent Calendar",
+  "title": "Juleølkalender",
+  "description": "Én ny juleøl bak hver luke frem mot jul – åpne dagens video og skål!",
   "demoDate": "2026-12-10",
   "doors": [
     {
       "day": 1,
-      "title": "Day 1",
+      "title": "Luke 1",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 2,
-      "title": "Day 2",
+      "title": "Luke 2",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 3,
-      "title": "Day 3",
+      "title": "Luke 3",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 4,
-      "title": "Day 4",
+      "title": "Luke 4",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 5,
-      "title": "Day 5",
+      "title": "Luke 5",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 6,
-      "title": "Day 6",
+      "title": "Luke 6",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 7,
-      "title": "Day 7",
+      "title": "Luke 7",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 8,
-      "title": "Day 8",
+      "title": "Luke 8",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 9,
-      "title": "Day 9",
+      "title": "Luke 9",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 10,
-      "title": "Day 10",
+      "title": "Luke 10",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 11,
-      "title": "Day 11",
+      "title": "Luke 11",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 12,
-      "title": "Day 12",
+      "title": "Luke 12",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 13,
-      "title": "Day 13",
+      "title": "Luke 13",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 14,
-      "title": "Day 14",
+      "title": "Luke 14",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 15,
-      "title": "Day 15",
+      "title": "Luke 15",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 16,
-      "title": "Day 16",
+      "title": "Luke 16",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 17,
-      "title": "Day 17",
+      "title": "Luke 17",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 18,
-      "title": "Day 18",
+      "title": "Luke 18",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 19,
-      "title": "Day 19",
+      "title": "Luke 19",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 20,
-      "title": "Day 20",
+      "title": "Luke 20",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 21,
-      "title": "Day 21",
+      "title": "Luke 21",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 22,
-      "title": "Day 22",
+      "title": "Luke 22",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 23,
-      "title": "Day 23",
+      "title": "Luke 23",
       "videoUrl": "",
       "unlocked": false
     },
     {
       "day": 24,
-      "title": "Day 24",
+      "title": "Luke 24",
       "videoUrl": "",
       "unlocked": false
     }
