@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const CALENDAR_DATA_URL = "/data/calendar.json";
+  const CALENDAR_API_URL = "/api/calendar";
   const SVG_NS = "http://www.w3.org/2000/svg";
   const YOUTUBE_HOSTS = new Set([
     "youtube.com",
@@ -30,11 +30,13 @@
   const youtubeEl = document.getElementById("door-youtube");
   const modalMessageEl = document.getElementById("modal-message");
 
+  let lastFetchedAt = 0;
+
   /**
    * Populate gentle CSS snowfall particles unless reduced motion is preferred.
    */
   function initSnowfall() {
-    if (!snowfallEl) {
+    if (!snowfallEl || snowfallEl.childElementCount > 0) {
       return;
     }
     const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
@@ -156,76 +158,13 @@
   }
 
   /**
-   * Parse an ISO YYYY-MM-DD date string strictly into calendar components.
-   * @param {string} value
-   * @returns {{ year: number, month: number, day: number } | null}
+   * Format integer hour (0-23) as HH:00.
+   * @param {unknown} hour
+   * @returns {string}
    */
-  function parseIsoDate(value) {
-    if (typeof value !== "string") {
-      return null;
-    }
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
-    if (!match) {
-      return null;
-    }
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-    const check = new Date(year, month - 1, day);
-    if (
-      check.getFullYear() !== year ||
-      check.getMonth() !== month - 1 ||
-      check.getDate() !== day
-    ) {
-      return null;
-    }
-    return { year, month, day };
-  }
-
-  /**
-   * Resolve the effective calendar date from ?date=YYYY-MM-DD, ?date=live,
-   * calendar.json demoDate, or the browser's current local date.
-   * @param {{ demoDate?: string } | null} data
-   * @returns {{ year: number, month: number, day: number, isDemo: boolean }}
-   */
-  function resolveEffectiveDate(data) {
-    const queryDate = new URLSearchParams(window.location.search).get("date");
-    if (queryDate && queryDate.toLowerCase() !== "live") {
-      const parsedQuery = parseIsoDate(queryDate);
-      if (parsedQuery) {
-        return { ...parsedQuery, isDemo: true };
-      }
-    }
-
-    if (queryDate?.toLowerCase() !== "live" && data && !Array.isArray(data)) {
-      const parsedDemo = parseIsoDate(data.demoDate);
-      if (parsedDemo) {
-        return { ...parsedDemo, isDemo: true };
-      }
-    }
-
-    const now = new Date();
-    return {
-      year: now.getFullYear(),
-      month: now.getMonth() + 1,
-      day: now.getDate(),
-      isDemo: false,
-    };
-  }
-
-  /**
-   * Determine whether a door is unlocked and whether it represents today's door.
-   * @param {{ day: number, unlocked?: boolean }} door
-   * @param {{ month: number, day: number }} effectiveDate
-   * @returns {{ isUnlocked: boolean, isToday: boolean }}
-   */
-  function getDoorState(door, effectiveDate) {
-    const isDecember = effectiveDate.month === 12;
-    const unlockedByDate = isDecember && door.day <= effectiveDate.day;
-    return {
-      isUnlocked: Boolean(door.unlocked) || unlockedByDate,
-      isToday: isDecember && door.day === effectiveDate.day,
-    };
+  function formatUnlockTime(hour) {
+    const num = Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 6;
+    return `${String(num).padStart(2, "0")}:00`;
   }
 
   /**
@@ -243,15 +182,20 @@
   }
 
   /**
-   * Update the header pill showing the active date and unlock progress.
-   * @param {{ month: number, day: number, isDemo: boolean }} effectiveDate
+   * Update the header pill showing the server date, progress, and unlock hour.
+   * @param {{ month: number, day: number, isDemo?: boolean } | null} serverDate
    * @param {number} unlockedCount
    * @param {number} totalCount
+   * @param {string} unlockTime
    */
-  function updateDemoBanner(effectiveDate, unlockedCount, totalCount) {
-    const monthName = MONTH_NAMES[effectiveDate.month - 1] || "desember";
-    const prefix = effectiveDate.isDemo ? "Demodato: " : "";
-    demoBannerEl.textContent = `${prefix}${effectiveDate.day}. ${monthName} · ${unlockedCount} / ${totalCount} luker åpnet`;
+  function updateProgressBanner(serverDate, unlockedCount, totalCount, unlockTime) {
+    if (!serverDate) {
+      demoBannerEl.hidden = true;
+      return;
+    }
+    const monthName = MONTH_NAMES[serverDate.month - 1] || "desember";
+    const prefix = serverDate.isDemo ? "Demodato: " : "";
+    demoBannerEl.textContent = `${prefix}${serverDate.day}. ${monthName} · ${unlockedCount} / ${totalCount} luker åpnet · Ny luke kl. ${unlockTime}`;
     demoBannerEl.hidden = false;
   }
 
@@ -275,18 +219,25 @@
 
   /**
    * Open the modal for a given calendar door entry.
-   * @param {{ day: number, title?: string, videoUrl?: string, unlocked?: boolean }} door
-   * @param {{ isUnlocked: boolean, isToday: boolean }} doorState
+   * @param {{ day: number, title?: string, videoUrl?: string | null, unlocked?: boolean, isToday?: boolean }} door
+   * @param {string} unlockTime
    */
-  function openDoorModal(door, doorState) {
+  function openDoorModal(door, unlockTime) {
     const label = door.title || `Luke ${door.day}`;
-    modalTitleEl.textContent = doorState.isToday ? `${label} — I dag` : label;
+    const isUnlocked = Boolean(door.unlocked);
+    const isToday = Boolean(door.isToday);
+
+    modalTitleEl.textContent = isToday && isUnlocked ? `${label} — I dag` : label;
     modalMessageEl.hidden = true;
     modalMessageEl.textContent = "";
     resetYouTubePlayer();
 
-    if (!doorState.isUnlocked) {
-      showModalMessage(`Låst frem til ${door.day}. desember. Kom tilbake da for å åpne luken!`);
+    if (!isUnlocked) {
+      if (isToday) {
+        showModalMessage(`${label} åpner i dag kl. ${unlockTime}!`);
+      } else {
+        showModalMessage(`Låst frem til ${door.day}. desember kl. ${unlockTime}. Kom tilbake da for å åpne luken!`);
+      }
     } else {
       const youtubeId = extractYouTubeId(door.videoUrl);
       if (youtubeId) {
@@ -318,12 +269,13 @@
 
   /**
    * Build a single accessible calendar door card element.
-   * @param {{ day: number, title?: string, videoUrl?: string, unlocked?: boolean }} door
-   * @param {{ isUnlocked: boolean, isToday: boolean }} doorState
+   * @param {{ day: number, title?: string, videoUrl?: string | null, unlocked?: boolean, isToday?: boolean }} door
+   * @param {string} unlockTime
    * @returns {HTMLButtonElement}
    */
-  function createDoorCard(door, doorState) {
-    const { isUnlocked, isToday } = doorState;
+  function createDoorCard(door, unlockTime) {
+    const isUnlocked = Boolean(door.unlocked);
+    const isToday = Boolean(door.isToday);
     const isEve = door.day === 24;
     const title = door.title || `Luke ${door.day}`;
 
@@ -332,14 +284,14 @@
     button.className = [
       "door-card",
       isUnlocked ? "door-card--unlocked" : "door-card--locked",
-      isToday ? "door-card--today" : "",
+      isToday && isUnlocked ? "door-card--today" : "",
       isEve ? "door-card--eve" : "",
     ]
       .filter(Boolean)
       .join(" ");
     button.dataset.day = String(door.day);
 
-    let stateLabel = `Låst frem til ${door.day}. desember`;
+    let stateLabel = `Låst frem til ${door.day}. desember kl. ${unlockTime}`;
     let badgeText = `${door.day}. des`;
     let iconVariant = isEve ? "eve" : "locked";
     if (isToday && isUnlocked) {
@@ -350,6 +302,9 @@
       stateLabel = "Åpnet";
       badgeText = "Åpen";
       iconVariant = isEve ? "eve" : "open";
+    } else if (isToday) {
+      stateLabel = `Åpner i dag kl. ${unlockTime}`;
+      badgeText = `Kl. ${unlockTime}`;
     }
     button.setAttribute("aria-label", `${title} (${stateLabel})`);
 
@@ -379,24 +334,24 @@
 
     metaDiv.append(titleSpan, badgeSpan);
     button.append(topRow, metaDiv);
-    button.addEventListener("click", () => openDoorModal(door, doorState));
+    button.addEventListener("click", () => openDoorModal(door, unlockTime));
 
     return button;
   }
 
   /**
-   * Fetch calendar manifest and render all doors.
+   * Fetch server-filtered calendar state and render all doors.
    */
-  async function initCalendar() {
-    initSnowfall();
-
+  async function loadCalendar() {
     try {
-      const response = await fetch(CALENDAR_DATA_URL, { cache: "no-cache" });
+      const response = await fetch(CALENDAR_API_URL, { cache: "no-store" });
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status} while loading calendar data`);
+        throw new Error(`HTTP ${response.status} while loading calendar API`);
       }
 
       const data = await response.json();
+      lastFetchedAt = Date.now();
+
       if (data && typeof data.title === "string" && data.title.trim()) {
         titleEl.textContent = data.title;
         document.title = data.title;
@@ -405,26 +360,25 @@
         subtitleEl.textContent = data.description;
       }
 
-      const doors = Array.isArray(data) ? data : data?.doors;
-      if (!Array.isArray(doors) || doors.length === 0) {
-        setStatus("Fant ingen luker i calendar.json.");
+      const doors = Array.isArray(data?.doors) ? data.doors : [];
+      if (doors.length === 0) {
+        setStatus("Fant ingen luker i kalenderen.");
         return;
       }
 
-      const effectiveDate = resolveEffectiveDate(data);
+      const unlockTime = formatUnlockTime(data.unlockHour);
       let unlockedCount = 0;
 
       setStatus("");
       const fragment = document.createDocumentFragment();
       for (const door of doors) {
-        const doorState = getDoorState(door, effectiveDate);
-        if (doorState.isUnlocked) {
+        if (door.unlocked) {
           unlockedCount += 1;
         }
-        fragment.appendChild(createDoorCard(door, doorState));
+        fragment.appendChild(createDoorCard(door, unlockTime));
       }
       gridEl.replaceChildren(fragment);
-      updateDemoBanner(effectiveDate, unlockedCount, doors.length);
+      updateProgressBanner(data.serverDate, unlockedCount, doors.length, unlockTime);
     } catch (error) {
       console.error("Failed to initialize advent calendar:", error);
       setStatus("Kunne ikke laste inn kalenderen. Prøv igjen senere.");
@@ -442,5 +396,18 @@
 
   modalEl.addEventListener("close", resetYouTubePlayer);
 
-  document.addEventListener("DOMContentLoaded", initCalendar);
+  document.addEventListener("visibilitychange", () => {
+    if (
+      document.visibilityState === "visible" &&
+      !modalEl.open &&
+      Date.now() - lastFetchedAt > 60_000
+    ) {
+      loadCalendar();
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initSnowfall();
+    loadCalendar();
+  });
 })();

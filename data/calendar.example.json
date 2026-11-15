@@ -1,7 +1,9 @@
 {
   "title": "Juleølkalender",
-  "description": "Én ny juleøl bak hver luke frem mot jul – åpne dagens video og skål!",
-  "demoDate": "2026-12-10",
+  "description": "Én ny juleøl bak hver luke frem mot jul – ny luke åpnes kl. 06:00 hver dag!",
+  "year": 2026,
+  "timezone": "Europe/Oslo",
+  "unlockHour": 6,
   "doors": [
     {
       "day": 1,
