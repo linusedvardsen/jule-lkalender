@@ -1,8 +1,6 @@
 # Self-Hosted Video Advent Calendar
 
-A lightweight, containerized **Video Advent Calendar** designed to run on a headless Linux server using **Nginx** and **Cloudflare Tunnel** (`cloudflared`).
-
-All traffic enters securely through Cloudflare Zero Trust over an outbound tunnel; the web container publishes **no host ports** and is reachable only on an isolated Docker bridge network.
+A lightweight, containerized **Video Advent Calendar** with a festive Christmas UI, Unlisted YouTube embed support (`youtube-nocookie.com`), and date-based door unlocking—configured to run via **Nginx** in Docker with direct IP access.
 
 ---
 
@@ -10,18 +8,17 @@ All traffic enters securely through Cloudflare Zero Trust over an outbound tunne
 
 ```text
 Internet / Browser
-        │  HTTPS
+        │  HTTP (e.g. http://<PUBLIC_IP> or http://<PUBLIC_IP>:8080)
         ▼
-  Cloudflare Edge
-        │  Encrypted Outbound Tunnel
+  Home Router / VPS Firewall (Port Forward TCP 80/8080 -> <LAN_IP>:8080)
+        │
         ▼
- [tunnel: cloudflared] ──(HTTP://web:80 over advent-internal bridge)──► [web: nginx:alpine]
-                                                                            ├── /usr/share/nginx/html (./public)
-                                                                            └── /etc/nginx/nginx.conf
+  [web: nginx:alpine]  (host port ${HOST_PORT:-8080} -> container :80)
+        ├── /usr/share/nginx/html  (./public)
+        └── /etc/nginx/nginx.conf  (./nginx/nginx.conf)
 ```
 
-- **`web` (`nginx:alpine`)**: Serves the static frontend (`public/`), calendar manifest (`public/data/calendar.json`), and MP4/WebM clips (`public/videos/`) with `sendfile`, `tcp_nopush`, byte-range seeking (`Accept-Ranges: bytes` / `206 Partial Content`), cache differentiation, and security headers.
-- **`tunnel` (`cloudflare/cloudflared:latest`)**: Authenticates with `CLOUDFLARE_TUNNEL_TOKEN` and proxies public HTTPS requests to `http://web:80` over the shared Docker bridge network.
+- **`web` (`nginx:alpine`)**: Serves the static frontend (`public/`), calendar manifest (`public/data/calendar.json`), security/referrer headers required for YouTube embeds, and basic request/connection rate limiting for direct internet exposure.
 
 ---
 
@@ -32,7 +29,6 @@ Internet / Browser
 ├── .env.example
 ├── .gitignore
 ├── README.md
-├── docker-compose.local.yml
 ├── docker-compose.yml
 ├── nginx/
 │   └── nginx.conf
@@ -52,166 +48,105 @@ Internet / Browser
 
 ## Prerequisites
 
-- **Linux server** (headless) with:
+- **Linux server** with:
   - [Docker Engine](https://docs.docker.com/engine/install/)
   - [Docker Compose v2 plugin](https://docs.docker.com/compose/install/) (`docker compose`)
-- **Cloudflare account** with an active **managed domain** (DNS hosted on Cloudflare) and **Cloudflare Zero Trust** enabled (free tier works).
+- **Public IPv4 connectivity** (either a Cloud VPS public IP, or a home router with a real public IPv4—not ISP CGNAT—and port forwarding configured).
 
 ---
 
-## Cloudflare Zero Trust Setup
+## Quick Start on Your Linux Server
 
-1. **Create the Tunnel**
-   - Sign in to the [Cloudflare Zero Trust Dashboard](https://one.dash.cloudflare.com/).
-   - Navigate to **Networks** &rarr; **Tunnels** &rarr; **Create a tunnel**.
-   - Select **Cloudflared** as the connector type, give the tunnel a name (e.g., `advent-calendar`), and click **Save tunnel**.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/linusedvardsen/jule-lkalender.git
+   cd jule-lkalender
+   ```
 
-2. **Copy the Tunnel Token into `.env`**
-   - Under **Install and run a connector**, locate the Docker/Linux command containing `--token <YOUR_TOKEN>`.
-   - Copy only the token string (starting with `eyJ...`).
-   - On your server in the repository root, create `.env` from `.env.example` and paste the token:
+2. **Start the container** (defaults to host port `8080` so it won't clash with anything on port `80`, no `.env` required):
+   ```bash
+   docker compose up -d
+   ```
+   *(Optional)* If port `80` is free on your Linux server and you prefer Docker to listen directly on port `80`:
+   ```bash
+   cp .env.example .env
+   # Edit .env and set HOST_PORT=80
+   docker compose up -d
+   ```
+
+3. **Verify locally on the server**
+   ```bash
+   docker compose ps
+   docker compose exec web nginx -t
+   curl -I http://localhost:8080
+   ```
+
+4. **Allow the host port in your Linux firewall (if `ufw` is active)**
+   ```bash
+   sudo ufw status
+   sudo ufw allow 8080/tcp
+   ```
+
+---
+
+## Home Router & Public IP Setup
+
+If hosting from a home Linux server instead of a VPS:
+
+1. **Confirm you are not behind CGNAT**
+   - Check your public IPv4 on the server:
      ```bash
-     cp .env.example .env
+     curl -4 ifconfig.me
      ```
-     Edit `.env`:
-     ```dotenv
-     CLOUDFLARE_TUNNEL_TOKEN=eyJ...your-token-here...
-     ```
-   - Lock down permissions on `.env` if desired:
-     ```bash
-     chmod 600 .env
-     ```
+   - Log into your router (gateway from `ip route | grep default`, e.g. `http://192.168.1.1`) and check its **WAN IPv4 address**:
+     - If it **matches** `curl -4 ifconfig.me`, port forwarding will work.
+     - If it starts with `100.64.`–`100.127.` (CGNAT), contact your ISP to request a public IPv4.
+     - If it starts with `192.168.`, `10.`, or `172.16.`–`172.31.`, you have double NAT (enable Bridge Mode on the upstream modem or forward both routers).
 
-3. **Configure the Public Hostname**
-   - In the tunnel configuration, open the **Public Hostname** tab and click **Add a public hostname**.
-   - Set **Subdomain** and **Domain** (e.g., `advent.example.com`).
-   - Under **Service**:
-     - **Type**: `HTTP`
-     - **URL**: `web:80` (resulting in `HTTP://web:80`)
-   - Save the hostname.
-   - Ensure your Cloudflare zone's SSL/TLS encryption mode handles HTTPS at the edge (do **not** add an HTTP-to-HTTPS redirect inside `nginx.conf`, as `cloudflared` connects to `http://web:80` internally).
+2. **Reserve your server's LAN IP**
+   - Run `hostname -I` on the server to get its LAN IP (e.g. `192.168.1.117`).
+   - Add a **DHCP Static Lease / IP Reservation** in your router for that server so its LAN IP never changes.
+
+3. **Forward the port on your router**
+   - **Protocol**: `TCP`
+   - **External Port**: `80` (clean URL `http://<PUBLIC_IP>`) or `8080` (use `8080` if your ISP blocks inbound port `80`)
+   - **Internal IP**: your server's LAN IP (e.g. `192.168.1.117`)
+   - **Internal Port**: `8080` (or `80` if you set `HOST_PORT=80` in `.env`)
+
+4. **Test from outside your home Wi-Fi**
+   - Turn off Wi-Fi on your phone (use 4G/5G mobile data) and open `http://<PUBLIC_IP>` (or `http://<PUBLIC_IP>:8080`).
 
 ---
 
-## Adding Video Media
+## Adding Unlisted YouTube Videos & Going Live
 
-Place your daily clips in `public/videos/` matching the paths in `public/data/calendar.json`:
-
-```text
-public/videos/day-01.mp4
-public/videos/day-02.mp4
-...
-public/videos/day-24.mp4
-```
-
-> **Note:** Video files in `public/videos/` (except `.gitkeep`) are excluded by `.gitignore` so large media binaries are never committed to Git. Transfer them directly to the server using `scp` or `rsync`.
-
-For fast startup and smooth browser scrubbing over MP4, ensure the `moov` atom is placed at the start of each file when encoding with `ffmpeg`:
-
-```bash
-ffmpeg -i input.mov -c:v libx264 -c:a aac -movflags +faststart public/videos/day-01.mp4
-```
-
-### Embedding Unlisted YouTube Videos
-
-Upload clips to YouTube with visibility set to **Unlisted** (hidden from YouTube search and your channel page while remaining embeddable) and paste any standard YouTube link into `videoUrl` in `public/data/calendar.json`:
-
-```json
-{
-  "day": 1,
-  "title": "Day 1",
-  "videoUrl": "https://youtu.be/YOUR_VIDEO_ID",
-  "unlocked": false
-}
-```
-
-- Supported formats (`youtube.com/watch?v=...`, `youtu.be/...`, `/shorts/...`, `/live/...`, `/embed/...`) are automatically embedded via `https://www.youtube-nocookie.com/embed/<ID>?rel=0`.
-- Keep `Referrer-Policy "strict-origin-when-cross-origin"` in `nginx/nginx.conf` so YouTube embeds receive the origin `Referer` they expect.
+1. Upload each day's clip to YouTube with visibility set to **Unlisted** (hidden from YouTube search and your channel page while remaining embeddable).
+2. Paste each YouTube link (`https://youtu.be/...`, `https://www.youtube.com/watch?v=...`, or `/shorts/...`) into `videoUrl` in `public/data/calendar.json`:
+   ```json
+   {
+     "day": 1,
+     "title": "Day 1",
+     "videoUrl": "https://youtu.be/YOUR_VIDEO_ID",
+     "unlocked": false
+   }
+   ```
+3. **Demo date vs. live December clock**:
+   - `public/data/calendar.json` currently sets `"demoDate": "2026-12-10"` so doors 1–10 appear unlocked for previewing.
+   - Remove `"demoDate"` when you want doors to unlock based on the visitor's real December date (you can still preview any date via `?date=2026-12-15` or `?date=live`).
+   - Keep `Referrer-Policy "strict-origin-when-cross-origin"` in `nginx/nginx.conf` so YouTube embeds receive the origin `Referer` header.
 
 ---
 
-## Running & Managing the Stack
-
-### Start in Detached Mode
+## Managing & Updating
 
 ```bash
-docker compose up -d
-```
-
-### Check Container Status & Health
-
-```bash
-docker compose ps
-```
-
-### Inspect Logs
-
-```bash
-# All services
+# View container logs
 docker compose logs -f
 
-# Cloudflare Tunnel connector logs (verify connection to Cloudflare Edge)
-docker compose logs -f tunnel
+# Pull latest Git changes and reload static files
+git pull
+docker compose up -d
 
-# Nginx access & error logs
-docker compose logs -f web
-```
-
-### Stop or Restart the Stack
-
-```bash
+# Stop the container
 docker compose down
-docker compose restart
 ```
-
----
-
-## Local Browser Preview (Without Cloudflare Tunnel)
-
-To preview the site locally in Docker on `http://localhost:8080` (and from mobile devices on your LAN via `http://<your-lan-ip>:8080`) without setting up a Cloudflare Tunnel token, use the dedicated local Compose file:
-
-```bash
-docker compose -f docker-compose.local.yml up
-```
-
-> **Note:** Keep `docker-compose.yml` for production deployments behind Cloudflare Tunnel. `docker-compose.local.yml` exists separately so host port `8080` is never accidentally published in production.
-
-### Previewing Specific December Dates
-
-- `public/data/calendar.json` currently includes `"demoDate": "2026-12-10"` so doors 1–10 appear unlocked (with Day 10 highlighted as **Today**) and doors 11–24 remain locked.
-- Remove `"demoDate"` from `public/data/calendar.json` when deploying live so doors unlock according to the visitor's system clock in December.
-- You can also override the date via query string at any time: `?date=2026-12-15` (simulate Dec 15) or `?date=live` (use current date).
-
----
-
-## Testing Locally (Without Publishing Host Ports)
-
-Because `web` intentionally uses `expose: ["80"]` instead of `ports:`, port `80` is not bound on the host interface. Use the commands below to verify the stack internally:
-
-1. **Validate Nginx configuration syntax**
-   ```bash
-   docker compose exec web nginx -t
-   ```
-
-2. **Check HTTP responses inside the `web` container**
-   ```bash
-   docker compose exec web wget -S -O /dev/null http://127.0.0.1/
-   docker compose exec web wget -S -O /dev/null http://127.0.0.1/data/calendar.json
-   ```
-
-3. **Verify byte-range streaming (`Accept-Ranges: bytes` / `206 Partial Content`) over the internal bridge network**
-
-   Once a test video exists at `public/videos/day-01.mp4`, attach a temporary `curl` container to the Compose bridge network (`<project>_advent-internal`; check exact name with `docker network ls`):
-   ```bash
-   NETWORK_NAME=$(docker network ls --filter name=advent-internal --format '{{.Name}}' | head -n 1)
-
-   # Verify Accept-Ranges and caching/security headers
-   docker run --rm --network "$NETWORK_NAME" curlimages/curl -I http://web:80/videos/day-01.mp4
-
-   # Verify HTTP 206 Partial Content byte-range response
-   docker run --rm --network "$NETWORK_NAME" curlimages/curl -I -r 0-1023 http://web:80/videos/day-01.mp4
-   ```
-
-4. **Test video playback in the browser**
-   - Temporarily set `"unlocked": true` for day 1 in `public/data/calendar.json` and ensure `public/videos/day-01.mp4` exists.
-   - Visit your Cloudflare Public Hostname (`https://advent.example.com`) and click **Day 1** to verify video playback and timeline scrubbing.
