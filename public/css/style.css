@@ -1,0 +1,569 @@
+:root {
+  --bg-pine-deep: #06130e;
+  --bg-pine-surface: #0b1f17;
+  --bg-evergreen: #123b2b;
+  --bg-evergreen-hover: #174c37;
+  --bg-today: #1c4c36;
+  --bg-cranberry: #311018;
+  --bg-cranberry-deep: #1e090e;
+  --bg-cranberry-hover: #3f1520;
+  --border-subtle: rgba(240, 196, 107, 0.22);
+  --border-strong: rgba(240, 196, 107, 0.65);
+  --accent-gold: #f0c46b;
+  --accent-gold-soft: rgba(240, 196, 107, 0.16);
+  --accent-red: #c93b47;
+  --accent-red-soft: rgba(201, 59, 71, 0.24);
+  --accent-pine: #3fa37a;
+  --text-primary: #fcf7eb;
+  --text-muted: #c2b9ac;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --shadow-card: 0 12px 28px rgba(0, 0, 0, 0.42);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 18% 8%, rgba(201, 59, 71, 0.16), transparent 40%),
+    radial-gradient(circle at 82% 6%, rgba(240, 196, 107, 0.14), transparent 36%),
+    radial-gradient(circle at 50% 88%, rgba(26, 94, 65, 0.24), transparent 52%),
+    var(--bg-pine-deep);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* Snowfall backdrop */
+.snowfall {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.snowflake {
+  position: absolute;
+  top: -12px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 252, 245, 0.95) 0%, rgba(255, 252, 245, 0.2) 70%, transparent 100%);
+  animation: snowfall-fall linear infinite;
+  will-change: transform;
+}
+
+@keyframes snowfall-fall {
+  0% {
+    transform: translate3d(0, -5vh, 0);
+  }
+  50% {
+    transform: translate3d(var(--drift, 14px), 52vh, 0);
+  }
+  100% {
+    transform: translate3d(calc(var(--drift, 14px) * -0.5), 108vh, 0);
+  }
+}
+
+/* Top Christmas fairy lights garland */
+.garland {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 44px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.garland__svg {
+  display: block;
+  width: 100%;
+  height: 44px;
+}
+
+.garland__wire {
+  fill: none;
+  stroke: rgba(240, 196, 107, 0.35);
+  stroke-width: 2;
+}
+
+.garland__cap {
+  fill: #24382f;
+}
+
+.garland__bulb--gold ellipse {
+  fill: #ffd87d;
+  filter: drop-shadow(0 0 6px rgba(255, 216, 125, 0.8));
+  animation: bulb-twinkle 2.8s ease-in-out infinite;
+}
+
+.garland__bulb--red ellipse {
+  fill: #ef5360;
+  filter: drop-shadow(0 0 6px rgba(239, 83, 96, 0.75));
+  animation: bulb-twinkle 3.4s ease-in-out 0.9s infinite;
+}
+
+.garland__bulb--green ellipse {
+  fill: #4cd498;
+  filter: drop-shadow(0 0 6px rgba(76, 212, 152, 0.7));
+  animation: bulb-twinkle 3.1s ease-in-out 1.7s infinite;
+}
+
+@keyframes bulb-twinkle {
+  0%,
+  100% {
+    opacity: 0.96;
+  }
+  50% {
+    opacity: 0.52;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snowflake,
+  .garland__bulb ellipse {
+    animation: none;
+  }
+
+  .snowfall {
+    display: none;
+  }
+}
+
+.page-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding: 0.75rem 0.9rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 44px);
+  min-height: calc(100dvh - 44px);
+}
+
+.site-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.site-crest {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.35rem;
+}
+
+.site-crest__svg {
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(240, 196, 107, 0.2));
+}
+
+.site-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+}
+
+.site-title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.85rem, 5vw, 3.1rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  text-shadow: 0 2px 18px rgba(240, 196, 107, 0.18);
+}
+
+.site-subtitle {
+  margin: 0.5rem auto 0;
+  max-width: 44ch;
+  color: var(--text-muted);
+  font-size: clamp(0.92rem, 2.5vw, 1rem);
+}
+
+.demo-banner {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 1rem auto 0;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 196, 107, 0.45);
+  background: linear-gradient(90deg, rgba(158, 31, 44, 0.42), rgba(18, 59, 43, 0.55));
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.demo-banner[hidden] {
+  display: none;
+}
+
+.calendar-main {
+  flex: 1;
+}
+
+.calendar-status {
+  margin: 0 0 1.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(201, 59, 71, 0.55);
+  background: rgba(201, 59, 71, 0.16);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+@media (min-width: 560px) {
+  .page-shell {
+    padding: 1.15rem 1.25rem 3rem;
+  }
+
+  .site-header {
+    margin-bottom: 2.15rem;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .calendar-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.1rem;
+  }
+}
+
+@media (min-width: 1080px) {
+  .calendar-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1.2rem;
+  }
+}
+
+.door-card {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  padding: 0.95rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(155deg, var(--bg-cranberry) 0%, var(--bg-cranberry-deep) 100%);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  text-align: left;
+  overflow: hidden;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+/* Inner stitched advent-door perforation */
+.door-card::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: calc(var(--radius-lg) - 5px);
+  border: 1px dashed rgba(240, 196, 107, 0.24);
+  pointer-events: none;
+}
+
+@media (min-width: 560px) {
+  .door-card {
+    padding: 1.05rem;
+  }
+}
+
+@media (hover: hover) {
+  .door-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-strong);
+  }
+
+  .door-card--locked:hover {
+    background: linear-gradient(155deg, var(--bg-cranberry-hover) 0%, var(--bg-cranberry-deep) 100%);
+  }
+
+  .door-card--unlocked:hover {
+    background: linear-gradient(155deg, var(--bg-evergreen-hover) 0%, var(--bg-pine-surface) 100%);
+  }
+}
+
+.door-card:active {
+  transform: scale(0.98);
+}
+
+.door-card:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 3px;
+}
+
+.door-card--unlocked {
+  background: linear-gradient(155deg, var(--bg-evergreen) 0%, var(--bg-pine-surface) 100%);
+  border-color: rgba(240, 196, 107, 0.45);
+}
+
+.door-card--unlocked::before {
+  border-color: rgba(240, 196, 107, 0.34);
+}
+
+.door-card--today {
+  background: linear-gradient(155deg, var(--bg-today) 0%, #102a1f 100%);
+  border-color: var(--accent-gold);
+  box-shadow:
+    0 0 0 1px rgba(240, 196, 107, 0.3),
+    0 14px 34px rgba(240, 196, 107, 0.18);
+}
+
+.door-card--today::before {
+  border-style: solid;
+  border-color: rgba(240, 196, 107, 0.42);
+}
+
+.door-card--eve {
+  border-color: rgba(240, 196, 107, 0.45);
+}
+
+.door-card__top {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.door-card__number {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.85rem, 3vw, 2.45rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent-gold);
+}
+
+.door-card--locked .door-card__number {
+  color: rgba(252, 247, 235, 0.78);
+}
+
+.door-card__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.door-card--locked .door-card__icon {
+  color: rgba(240, 196, 107, 0.65);
+}
+
+.door-card--unlocked .door-card__icon {
+  color: #8fe8be;
+}
+
+.door-card--today .door-card__icon,
+.door-card--eve .door-card__icon {
+  color: var(--accent-gold);
+}
+
+.door-card__meta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.door-card__title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.door-card--locked .door-card__title {
+  color: rgba(252, 247, 235, 0.82);
+}
+
+.door-card__badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.18rem 0.58rem;
+  border-radius: 999px;
+  font-size: 0.71rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(240, 196, 107, 0.12);
+  color: rgba(252, 247, 235, 0.8);
+}
+
+.door-card--unlocked .door-card__badge {
+  background: rgba(63, 163, 122, 0.28);
+  color: #9ff0cc;
+}
+
+.door-card--today .door-card__badge {
+  background: linear-gradient(90deg, var(--accent-red), #d9822b);
+  color: #fffaf0;
+}
+
+.site-footer {
+  margin-top: 2.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.video-modal {
+  width: min(820px, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 1.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #0e261d 0%, var(--bg-pine-deep) 100%);
+  color: var(--text-primary);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+}
+
+.video-modal::backdrop {
+  background: rgba(3, 10, 7, 0.82);
+  backdrop-filter: blur(5px);
+}
+
+.video-modal__ribbon {
+  height: 6px;
+  width: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    #b62634 0 12px,
+    #18573d 12px 24px,
+    #f0c46b 24px 28px
+  );
+}
+
+.video-modal__surface {
+  padding: 1rem;
+}
+
+@media (min-width: 560px) {
+  .video-modal {
+    width: min(820px, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+  }
+
+  .video-modal__surface {
+    padding: 1.25rem;
+  }
+}
+
+.video-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.video-modal__title {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.4rem;
+  color: var(--accent-gold);
+}
+
+.video-modal__close {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  display: grid;
+  place-items: center;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.video-modal__close:hover {
+  border-color: var(--border-strong);
+  background: var(--accent-gold-soft);
+}
+
+.video-modal__close:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+.video-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.video-modal__player {
+  display: block;
+  width: min(100%, calc(70dvh * 16 / 9));
+  margin: 0 auto;
+  max-height: 70dvh;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: #000;
+}
+
+.video-modal__player[hidden] {
+  display: none;
+}
+
+.video-modal__message {
+  margin: 0;
+  padding: 2.5rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(240, 196, 107, 0.32);
+  background: rgba(49, 16, 24, 0.28);
+  color: var(--text-primary);
+  text-align: center;
+}

@@ -1,0 +1,38 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# OS artifacts
+.DS_Store
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+
+# Editor & IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local logs, PIDs, and temporary files
+*.log
+*.pid
+*.tmp
+logs/
+tmp/
+
+# Large media & test binaries (keep directory placeholder tracked)
+public/videos/*
+!public/videos/.gitkeep
+*.mp4
+*.webm
+*.mov
+*.mkv
+*.avi
+*.m4v
+*.ogv
+*.bin
+*.iso
